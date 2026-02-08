@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>TKMC Crush Board 💌</title>
+<title>TKMC Crush Confession Board 💌</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -14,6 +13,12 @@ body{
     color:white;
 }
 
+/* ===== HEADER ===== */
+h1{
+    text-align:center;
+    margin:15px 0;
+}
+
 /* ===== LAYOUT ===== */
 .wrapper{
     display:flex;
@@ -21,16 +26,15 @@ body{
     padding:20px;
 }
 
-/* mobile */
 @media(max-width:800px){
     .wrapper{flex-direction:column;}
 }
 
-/* ===== FORM SIDE ===== */
+/* ===== FORM ===== */
 .formBox{
     flex:1;
     background:rgba(255,255,255,0.15);
-    backdrop-filter: blur(12px);
+    backdrop-filter:blur(12px);
     padding:20px;
     border-radius:16px;
 }
@@ -41,35 +45,38 @@ input, textarea{
     margin:8px 0;
     border:none;
     border-radius:8px;
+    font-size:14px;
 }
 
-textarea{height:120px}
+textarea{
+    height:120px;
+}
 
 button{
     width:100%;
     padding:12px;
     background:#ff4d6d;
-    border:none;
     color:white;
-    font-weight:bold;
+    border:none;
     border-radius:10px;
+    font-weight:bold;
     cursor:pointer;
 }
 
-/* ===== TABLE BOARD ===== */
+/* ===== BOARD ===== */
 .board{
     flex:2;
     background:rgba(255,255,255,0.12);
-    backdrop-filter: blur(12px);
+    backdrop-filter:blur(12px);
     padding:15px;
     border-radius:16px;
     overflow:auto;
+    max-height:80vh;
 }
 
 table{
     width:100%;
     border-collapse:collapse;
-    color:white;
 }
 
 th{
@@ -80,14 +87,13 @@ th{
 
 td{
     padding:8px;
-    border-bottom:1px solid rgba(255,255,255,0.2);
+    border-bottom:1px solid rgba(255,255,255,0.25);
 }
 
 tr:hover{
-    background:rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.08);
 }
 
-/* small text */
 .time{
     font-size:12px;
     opacity:.8;
@@ -95,13 +101,14 @@ tr:hover{
 </style>
 </head>
 
+
 <body>
 
-<h1 style="text-align:center;margin-top:15px;">💌 Crush Confession Board</h1>
+<h1>💌 Anonymous Crush Board</h1>
 
 <div class="wrapper">
 
-    <!-- ===== LEFT FORM ===== -->
+    <!-- ================= FORM ================= -->
     <div class="formBox">
         <h3>Send Message ❤️</h3>
 
@@ -112,9 +119,9 @@ tr:hover{
     </div>
 
 
-    <!-- ===== RIGHT BOARD ===== -->
+    <!-- ================= TABLE ================= -->
     <div class="board">
-        <h3>❤️ Live Board</h3>
+        <h3>❤️ Live Messages</h3>
 
         <table>
             <thead>
@@ -134,7 +141,8 @@ tr:hover{
 
 <script>
 
-/* ===== LINKS ===== */
+/* ================= LINKS ================= */
+
 const FORM_ACTION =
 "https://docs.google.com/forms/d/e/1FAIpQLSfelU_00WKalp-lEBfJgMz7KvGEdjh8CMoI3XhfCAbjD2thUw/formResponse";
 
@@ -142,7 +150,8 @@ const CSV_URL =
 "https://docs.google.com/spreadsheets/d/e/2PACX-1vRp0XnZWfv7TKjF6eH5NNdtjGkn_U0qx9QfwT_9iUW_g9xmf02hg0opDrrJeZb3PJNdsTs7Ub2-6BcK/pub?output=csv";
 
 
-/* ===== SUBMIT ===== */
+/* ================= SUBMIT ================= */
+
 function send(){
 
     const name = document.getElementById("name").value.trim();
@@ -154,54 +163,77 @@ function send(){
     }
 
     const fd = new FormData();
+
+    /* YOUR ENTRY IDS */
     fd.append("entry.114558379", name);
     fd.append("entry.629672075", msg);
 
-    fetch(FORM_ACTION,{method:"POST",mode:"no-cors",body:fd});
+    fetch(FORM_ACTION,{
+        method:"POST",
+        mode:"no-cors",
+        body:fd
+    });
+
+    alert("Sent anonymously 💌");
 
     document.getElementById("name").value="";
     document.getElementById("msg").value="";
 
-    setTimeout(loadData,1500);
+    setTimeout(loadData,2000);
 }
 
 
-/* ===== LOAD TABLE ===== */
+/* ================= STABLE LOAD (NO GLITCH) ================= */
+
+let lastHTML = ""; // cache to prevent blank flicker
+
 async function loadData(){
 
-    const res = await fetch(CSV_URL);
-    const text = await res.text();
+    try{
+        const res = await fetch(CSV_URL);
+        if(!res.ok) return;
 
-    const rows = text.split("\n").slice(1).reverse();
+        const text = await res.text();
+        if(!text || text.length < 10) return;
 
-    let html="";
-    let i=1;
+        const rows = text.split("\n").slice(1).reverse();
 
-    rows.forEach(r=>{
-        if(!r) return;
+        let html="";
+        let i=1;
 
-        const c = r.split(",");
-        const time=c[0], name=c[1], msg=c[2];
+        rows.forEach(r=>{
+            if(!r) return;
 
-        if(!name || !msg || name==="undefined") return;
+            const c = r.split(",");
+            const time=c[0], name=c[1], msg=c[2];
 
-        html += `
-        <tr>
-            <td>${i++}</td>
-            <td>❤️ ${name}</td>
-            <td>${msg}</td>
-            <td class="time">${time}</td>
-        </tr>`;
-    });
+            if(!name || !msg || name==="undefined") return;
 
-    document.getElementById("rows").innerHTML = html;
+            html += `
+            <tr>
+                <td>${i++}</td>
+                <td>❤️ ${name}</td>
+                <td>${msg}</td>
+                <td class="time">${time}</td>
+            </tr>`;
+        });
+
+        if(html){
+            lastHTML = html;
+            document.getElementById("rows").innerHTML = html;
+        }
+
+    }catch(e){
+        document.getElementById("rows").innerHTML = lastHTML;
+    }
 }
 
+
+/* slower refresh = more stable */
 loadData();
-setInterval(loadData,5000);
+setInterval(loadData,10000);
 
 </script>
 
 </body>
 </html>
-
