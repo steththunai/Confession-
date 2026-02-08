@@ -1,56 +1,95 @@
-```html
+
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>TKMC Crush Confessions 💌</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
 body{
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', sans-serif;
     margin:0;
+    padding:20px;
     background: linear-gradient(135deg,#667eea,#764ba2);
-    text-align:center;
     color:white;
 }
 
+/* ===== HEADER ===== */
 h1{
-    margin-top:20px;
+    text-align:center;
+    margin-bottom:25px;
 }
 
-.box{
-    background:white;
-    color:black;
-    margin:20px;
+/* ===== FORM ===== */
+.formBox{
+    max-width:500px;
+    margin:auto;
+    background:rgba(255,255,255,0.15);
+    backdrop-filter: blur(12px);
     padding:20px;
-    border-radius:15px;
+    border-radius:18px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.3);
 }
 
 input, textarea{
     width:100%;
-    padding:10px;
+    padding:12px;
     margin:8px 0;
-    font-size:16px;
-    border-radius:8px;
-    border:1px solid #ccc;
+    border:none;
+    border-radius:10px;
+    font-size:15px;
+}
+
+textarea{
+    height:120px;
 }
 
 button{
     width:100%;
     padding:12px;
-    background:#667eea;
+    background:#ff4d6d;
     color:white;
+    font-weight:bold;
     border:none;
-    border-radius:10px;
-    font-size:16px;
+    border-radius:12px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{
+    background:#ff3355;
+}
+
+/* ===== MESSAGE LIST ===== */
+.list{
+    max-width:600px;
+    margin:35px auto;
 }
 
 .card{
-    background:#ffffff20;
-    margin:10px;
-    padding:12px;
-    border-radius:12px;
+    background:rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border-radius:16px;
+    padding:15px;
+    margin-bottom:15px;
+    animation:fade .4s ease;
+    box-shadow:0 6px 18px rgba(0,0,0,0.2);
+}
+
+.card b{
+    font-size:16px;
+}
+
+.time{
+    font-size:12px;
+    opacity:.8;
+    margin-top:6px;
+}
+
+@keyframes fade{
+    from{opacity:0; transform:translateY(8px);}
+    to{opacity:1;}
 }
 </style>
 </head>
@@ -59,25 +98,24 @@ button{
 
 <h1>💌 Anonymous Crush Messages</h1>
 
-<!-- ================= FORM ================= -->
-<div class="box">
+<!-- ===== FORM ===== -->
+<div class="formBox">
 
 <input id="name" placeholder="Crush name ❤️">
 <textarea id="msg" placeholder="Message to your crush 💬"></textarea>
 
-<button onclick="send()">Submit</button>
+<button onclick="send()">Send Confession</button>
 
 </div>
 
 
-<h2>❤️ Messages</h2>
-<div id="responses"></div>
+<h2 style="text-align:center;margin-top:35px;">❤️ Messages</h2>
+<div id="responses" class="list"></div>
 
 
 <script>
 
-/* ================= GOOGLE FORM SETTINGS ================= */
-
+/* ===== LINKS ===== */
 const FORM_ACTION =
 "https://docs.google.com/forms/d/e/1FAIpQLSfelU_00WKalp-lEBfJgMz7KvGEdjh8CMoI3XhfCAbjD2thUw/formResponse";
 
@@ -85,8 +123,7 @@ const CSV_URL =
 "https://docs.google.com/spreadsheets/d/e/2PACX-1vRp0XnZWfv7TKjF6eH5NNdtjGkn_U0qx9QfwT_9iUW_g9xmf02hg0opDrrJeZb3PJNdsTs7Ub2-6BcK/pub?output=csv";
 
 
-/* ================= SUBMIT ================= */
-
+/* ===== SEND ===== */
 function send(){
 
     const name = document.getElementById("name").value.trim();
@@ -97,19 +134,13 @@ function send(){
         return;
     }
 
-    const formData = new FormData();
+    const data = new FormData();
+    data.append("entry.114558379", name);
+    data.append("entry.629672075", msg);
 
-    /* YOUR ENTRY IDS */
-    formData.append("entry.114558379", name);
-    formData.append("entry.629672075", msg);
+    fetch(FORM_ACTION,{ method:"POST", mode:"no-cors", body:data });
 
-    fetch(FORM_ACTION,{
-        method:"POST",
-        mode:"no-cors",
-        body:formData
-    });
-
-    alert("Sent anonymously ✅");
+    alert("Sent anonymously 💌");
 
     document.getElementById("name").value="";
     document.getElementById("msg").value="";
@@ -118,8 +149,7 @@ function send(){
 }
 
 
-/* ================= SHOW RESPONSES ================= */
-
+/* ===== LOAD MESSAGES ===== */
 async function loadData(){
 
     const res = await fetch(CSV_URL);
@@ -128,22 +158,26 @@ async function loadData(){
     const rows = text.split("\n").slice(1).reverse();
 
     let html="";
+    let count=1;
 
-    rows.forEach((row,i)=>{
+    rows.forEach(row=>{
+
         if(!row) return;
 
-        const cols = row.split(",");
+        const c = row.split(",");
 
-        const time = cols[0];
-        const name = cols[1];
-        const msg  = cols[2];
+        const time = c[0];
+        const name = c[1];
+        const msg  = c[2];
+
+        /* skip empty rows */
+        if(!name || !msg || name==="undefined") return;
 
         html += `
         <div class="card">
-            <b>#${i+1}</b><br>
-            ❤️ <b>${name}</b><br>
-            💬 ${msg}<br>
-            ⏰ ${time}
+            <b>#${count++} ❤️ ${name}</b>
+            <div>💬 ${msg}</div>
+            <div class="time">⏰ ${time}</div>
         </div>`;
     });
 
@@ -151,19 +185,12 @@ async function loadData(){
 }
 
 
-/* auto refresh every 5 sec */
+/* auto refresh */
 loadData();
 setInterval(loadData,5000);
-
-
-/* block copy paste */
-document.addEventListener("paste",e=>e.preventDefault());
-document.addEventListener("copy",e=>e.preventDefault());
-document.addEventListener("cut",e=>e.preventDefault());
-document.addEventListener("contextmenu",e=>e.preventDefault());
 
 </script>
 
 </body>
 </html>
-```
+
