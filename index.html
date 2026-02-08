@@ -1,162 +1,169 @@
+```html
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>TKMC Confessions • Coming Soon</title>
+<title>TKMC Crush Confessions 💌</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-/* ===== BODY ===== */
 body{
-  margin:0;
-  height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-family:Arial, sans-serif;
-  color:white;
-  overflow:hidden;
-
-  background:linear-gradient(-45deg,#667eea,#764ba2,#5f2c82,#49a09d);
-  background-size:400% 400%;
-  animation:gradient 10s ease infinite;
+    font-family: Arial, sans-serif;
+    margin:0;
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    text-align:center;
+    color:white;
 }
 
-@keyframes gradient{
-  0%{background-position:0% 50%}
-  50%{background-position:100% 50%}
-  100%{background-position:0% 50%}
+h1{
+    margin-top:20px;
 }
 
-/* ===== CARD ===== */
-.card{
-  text-align:center;
-  padding:40px;
-  border-radius:20px;
-  backdrop-filter:blur(12px);
-  background:rgba(255,255,255,0.12);
-  box-shadow:0 0 40px rgba(0,0,0,0.3);
-  width:90%;
-  max-width:380px;
+.box{
+    background:white;
+    color:black;
+    margin:20px;
+    padding:20px;
+    border-radius:15px;
 }
 
-/* ===== TITLE ===== */
-h2{
-  margin-bottom:15px;
+input, textarea{
+    width:100%;
+    padding:10px;
+    margin:8px 0;
+    font-size:16px;
+    border-radius:8px;
+    border:1px solid #ccc;
 }
 
-/* ===== TYPING TEXT ===== */
-.typing{
-  white-space:nowrap;
-  overflow:hidden;
-  border-right:3px solid white;
-  width:0;
-  margin:auto;
-  font-size:16px;
-  animation:typing 4s steps(40,end) forwards, blink 1s infinite;
-}
-
-@keyframes typing{
-  from{width:0}
-  to{width:100%}
-}
-
-@keyframes blink{
-  50%{border-color:transparent}
-}
-
-/* ===== SPINNER ===== */
-.spinner{
-  margin:25px auto;
-  width:45px;
-  height:45px;
-  border:5px solid rgba(255,255,255,0.3);
-  border-top:5px solid white;
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-}
-
-@keyframes spin{
-  to{transform:rotate(360deg)}
-}
-
-/* ===== COUNTDOWN ===== */
-#countdown{
-  font-size:26px;
-  font-weight:bold;
-  margin:10px 0;
-}
-
-/* ===== BUTTON ===== */
 button{
-  margin-top:15px;
-  padding:10px 18px;
-  border:none;
-  border-radius:10px;
-  background:white;
-  color:#5f2c82;
-  font-weight:bold;
-  cursor:pointer;
-  transition:0.2s;
+    width:100%;
+    padding:12px;
+    background:#667eea;
+    color:white;
+    border:none;
+    border-radius:10px;
+    font-size:16px;
 }
 
-button:hover{
-  transform:scale(1.05);
+.card{
+    background:#ffffff20;
+    margin:10px;
+    padding:12px;
+    border-radius:12px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="card">
+<h1>💌 Anonymous Crush Messages</h1>
 
-  <h2>🚧 TKMC Confessions</h2>
+<!-- ================= FORM ================= -->
+<div class="box">
 
-  <div class="typing">
-    Will be back soon... under construction of site
-  </div>
+<input id="name" placeholder="Crush name ❤️">
+<textarea id="msg" placeholder="Message to your crush 💬"></textarea>
 
-  <div class="spinner"></div>
-
-  <div id="countdown">Loading...</div>
-
-  <button onclick="notify()">🔔 Notify Me</button>
+<button onclick="send()">Submit</button>
 
 </div>
 
 
+<h2>❤️ Messages</h2>
+<div id="responses"></div>
+
+
 <script>
-/* ===== COUNTDOWN TIMER ===== */
-/* Change reopening time here */
-const targetDate = new Date();
-targetDate.setMinutes(targetDate.getMinutes() + 30); // change minutes if needed
 
-function updateCountdown(){
-  const now = new Date();
-  const diff = targetDate - now;
+/* ================= GOOGLE FORM SETTINGS ================= */
 
-  if(diff <= 0){
-    document.getElementById("countdown").innerHTML = "✅ We're Live!";
-    return;
-  }
+const FORM_ACTION =
+"https://docs.google.com/forms/d/e/1FAIpQLSfelU_00WKalp-lEBfJgMz7KvGEdjh8CMoI3XhfCAbjD2thUw/formResponse";
 
-  const h = Math.floor(diff/1000/60/60);
-  const m = Math.floor(diff/1000/60%60);
-  const s = Math.floor(diff/1000%60);
+const CSV_URL =
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vRp0XnZWfv7TKjF6eH5NNdtjGkn_U0qx9QfwT_9iUW_g9xmf02hg0opDrrJeZb3PJNdsTs7Ub2-6BcK/pub?output=csv";
 
-  document.getElementById("countdown").innerHTML =
-    `${h}h ${m}m ${s}s`;
+
+/* ================= SUBMIT ================= */
+
+function send(){
+
+    const name = document.getElementById("name").value.trim();
+    const msg  = document.getElementById("msg").value.trim();
+
+    if(!name || !msg){
+        alert("Fill both fields");
+        return;
+    }
+
+    const formData = new FormData();
+
+    /* YOUR ENTRY IDS */
+    formData.append("entry.114558379", name);
+    formData.append("entry.629672075", msg);
+
+    fetch(FORM_ACTION,{
+        method:"POST",
+        mode:"no-cors",
+        body:formData
+    });
+
+    alert("Sent anonymously ✅");
+
+    document.getElementById("name").value="";
+    document.getElementById("msg").value="";
+
+    setTimeout(loadData,2000);
 }
 
-setInterval(updateCountdown,1000);
-updateCountdown();
 
+/* ================= SHOW RESPONSES ================= */
 
-/* ===== NOTIFY BUTTON (NO REDIRECT) ===== */
-function notify(){
-  alert("🔔 Notification saved!\nWe’ll be back soon 🙂");
+async function loadData(){
+
+    const res = await fetch(CSV_URL);
+    const text = await res.text();
+
+    const rows = text.split("\n").slice(1).reverse();
+
+    let html="";
+
+    rows.forEach((row,i)=>{
+        if(!row) return;
+
+        const cols = row.split(",");
+
+        const time = cols[0];
+        const name = cols[1];
+        const msg  = cols[2];
+
+        html += `
+        <div class="card">
+            <b>#${i+1}</b><br>
+            ❤️ <b>${name}</b><br>
+            💬 ${msg}<br>
+            ⏰ ${time}
+        </div>`;
+    });
+
+    document.getElementById("responses").innerHTML = html;
 }
+
+
+/* auto refresh every 5 sec */
+loadData();
+setInterval(loadData,5000);
+
+
+/* block copy paste */
+document.addEventListener("paste",e=>e.preventDefault());
+document.addEventListener("copy",e=>e.preventDefault());
+document.addEventListener("cut",e=>e.preventDefault());
+document.addEventListener("contextmenu",e=>e.preventDefault());
+
 </script>
 
 </body>
 </html>
+```
