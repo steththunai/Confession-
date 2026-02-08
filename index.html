@@ -2,115 +2,134 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8" />
-<title>TKMC Crush Confessions 💌</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<title>TKMC Crush Board 💌</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body{
-    font-family: 'Segoe UI', sans-serif;
     margin:0;
-    padding:20px;
-    background: linear-gradient(135deg,#667eea,#764ba2);
+    font-family:Segoe UI, sans-serif;
+    background:linear-gradient(135deg,#667eea,#764ba2);
     color:white;
 }
 
-/* ===== HEADER ===== */
-h1{
-    text-align:center;
-    margin-bottom:25px;
+/* ===== LAYOUT ===== */
+.wrapper{
+    display:flex;
+    gap:20px;
+    padding:20px;
 }
 
-/* ===== FORM ===== */
+/* mobile */
+@media(max-width:800px){
+    .wrapper{flex-direction:column;}
+}
+
+/* ===== FORM SIDE ===== */
 .formBox{
-    max-width:500px;
-    margin:auto;
+    flex:1;
     background:rgba(255,255,255,0.15);
     backdrop-filter: blur(12px);
     padding:20px;
-    border-radius:18px;
-    box-shadow:0 8px 30px rgba(0,0,0,0.3);
+    border-radius:16px;
 }
 
 input, textarea{
     width:100%;
-    padding:12px;
+    padding:10px;
     margin:8px 0;
     border:none;
-    border-radius:10px;
-    font-size:15px;
+    border-radius:8px;
 }
 
-textarea{
-    height:120px;
-}
+textarea{height:120px}
 
 button{
     width:100%;
     padding:12px;
     background:#ff4d6d;
+    border:none;
     color:white;
     font-weight:bold;
-    border:none;
-    border-radius:12px;
+    border-radius:10px;
     cursor:pointer;
-    transition:0.3s;
 }
 
-button:hover{
-    background:#ff3355;
-}
-
-/* ===== MESSAGE LIST ===== */
-.list{
-    max-width:600px;
-    margin:35px auto;
-}
-
-.card{
-    background:rgba(255,255,255,0.15);
-    backdrop-filter: blur(10px);
-    border-radius:16px;
+/* ===== TABLE BOARD ===== */
+.board{
+    flex:2;
+    background:rgba(255,255,255,0.12);
+    backdrop-filter: blur(12px);
     padding:15px;
-    margin-bottom:15px;
-    animation:fade .4s ease;
-    box-shadow:0 6px 18px rgba(0,0,0,0.2);
+    border-radius:16px;
+    overflow:auto;
 }
 
-.card b{
-    font-size:16px;
+table{
+    width:100%;
+    border-collapse:collapse;
+    color:white;
 }
 
+th{
+    background:#ff4d6d;
+    padding:10px;
+    text-align:left;
+}
+
+td{
+    padding:8px;
+    border-bottom:1px solid rgba(255,255,255,0.2);
+}
+
+tr:hover{
+    background:rgba(255,255,255,0.1);
+}
+
+/* small text */
 .time{
     font-size:12px;
     opacity:.8;
-    margin-top:6px;
-}
-
-@keyframes fade{
-    from{opacity:0; transform:translateY(8px);}
-    to{opacity:1;}
 }
 </style>
 </head>
 
 <body>
 
-<h1>💌 Anonymous Crush Messages</h1>
+<h1 style="text-align:center;margin-top:15px;">💌 Crush Confession Board</h1>
 
-<!-- ===== FORM ===== -->
-<div class="formBox">
+<div class="wrapper">
 
-<input id="name" placeholder="Crush name ❤️">
-<textarea id="msg" placeholder="Message to your crush 💬"></textarea>
+    <!-- ===== LEFT FORM ===== -->
+    <div class="formBox">
+        <h3>Send Message ❤️</h3>
 
-<button onclick="send()">Send Confession</button>
+        <input id="name" placeholder="Crush name">
+        <textarea id="msg" placeholder="Message to your crush"></textarea>
+
+        <button onclick="send()">Submit</button>
+    </div>
+
+
+    <!-- ===== RIGHT BOARD ===== -->
+    <div class="board">
+        <h3>❤️ Live Board</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Message</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+        </table>
+    </div>
 
 </div>
-
-
-<h2 style="text-align:center;margin-top:35px;">❤️ Messages</h2>
-<div id="responses" class="list"></div>
 
 
 <script>
@@ -123,7 +142,7 @@ const CSV_URL =
 "https://docs.google.com/spreadsheets/d/e/2PACX-1vRp0XnZWfv7TKjF6eH5NNdtjGkn_U0qx9QfwT_9iUW_g9xmf02hg0opDrrJeZb3PJNdsTs7Ub2-6BcK/pub?output=csv";
 
 
-/* ===== SEND ===== */
+/* ===== SUBMIT ===== */
 function send(){
 
     const name = document.getElementById("name").value.trim();
@@ -134,22 +153,20 @@ function send(){
         return;
     }
 
-    const data = new FormData();
-    data.append("entry.114558379", name);
-    data.append("entry.629672075", msg);
+    const fd = new FormData();
+    fd.append("entry.114558379", name);
+    fd.append("entry.629672075", msg);
 
-    fetch(FORM_ACTION,{ method:"POST", mode:"no-cors", body:data });
-
-    alert("Sent anonymously 💌");
+    fetch(FORM_ACTION,{method:"POST",mode:"no-cors",body:fd});
 
     document.getElementById("name").value="";
     document.getElementById("msg").value="";
 
-    setTimeout(loadData,2000);
+    setTimeout(loadData,1500);
 }
 
 
-/* ===== LOAD MESSAGES ===== */
+/* ===== LOAD TABLE ===== */
 async function loadData(){
 
     const res = await fetch(CSV_URL);
@@ -158,34 +175,28 @@ async function loadData(){
     const rows = text.split("\n").slice(1).reverse();
 
     let html="";
-    let count=1;
+    let i=1;
 
-    rows.forEach(row=>{
+    rows.forEach(r=>{
+        if(!r) return;
 
-        if(!row) return;
+        const c = r.split(",");
+        const time=c[0], name=c[1], msg=c[2];
 
-        const c = row.split(",");
-
-        const time = c[0];
-        const name = c[1];
-        const msg  = c[2];
-
-        /* skip empty rows */
         if(!name || !msg || name==="undefined") return;
 
         html += `
-        <div class="card">
-            <b>#${count++} ❤️ ${name}</b>
-            <div>💬 ${msg}</div>
-            <div class="time">⏰ ${time}</div>
-        </div>`;
+        <tr>
+            <td>${i++}</td>
+            <td>❤️ ${name}</td>
+            <td>${msg}</td>
+            <td class="time">${time}</td>
+        </tr>`;
     });
 
-    document.getElementById("responses").innerHTML = html;
+    document.getElementById("rows").innerHTML = html;
 }
 
-
-/* auto refresh */
 loadData();
 setInterval(loadData,5000);
 
