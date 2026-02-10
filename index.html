@@ -162,57 +162,200 @@ td{
 </div>
 
 <script>
-/* LINKS */
+
+/* ================= SETTINGS ================= */
+
+const COOLDOWN = 120; // seconds
+
 const FORM_ACTION =
 "https://docs.google.com/forms/d/e/1FAIpQLSfelU_00WKalp-lEBfJgMz7KvGEdjh8CMoI3XhfCAbjD2thUw/formResponse";
 
 const CSV_URL =
 "https://docs.google.com/spreadsheets/d/e/2PACX-1vRp0XnZWfv7TKjF6eH5NNdtjGkn_U0qx9QfwT_9iUW_g9xmf02hg0opDrrJeZb3PJNdsTs7Ub2-6BcK/pub?output=csv";
 
-/* SUBMIT */
+
+/* ================= BLOCK RULES ================= */
+
+/* 🚫 ALL emojis */
+const emojiRegex = /\p{Extended_Pictographic}/gu;
+
+/* 🚫 bad words (add more anytime) */
+const badWords = [
+"fuck","shit","bitch","asshole","porn","sex",
+"தேவடியா","புண்ட","ஓம்பு","சூது"
+];
+
+
+/* ================= HELPERS ================= */
+
+function hasBadWord(t){
+    t = t.toLowerCase();
+    return badWords.some(w => t.includes(w));
+}
+
+function onlyNumbers(t){
+    return /^[0-9]+$/.test(t);
+}
+
+function tooShort(t){
+    return t.length < 3;
+}
+
+function cleanEmojiLive(el){
+    el.value = el.value.replace(emojiRegex,"");
+}
+
+
+/* ================= BLOCK PASTE ================= */
+
+document.addEventListener("paste",e=>e.preventDefault());
+document.addEventListener("copy",e=>e.preventDefault());
+document.addEventListener("cut",e=>e.preventDefault());
+document.addEventListener("contextmenu",e=>e.preventDefault());
+
+
+/* ================= AUTO REMOVE EMOJI WHILE TYPING ================= */
+
+document.querySelectorAll("input,textarea").forEach(el=>{
+    el.addEventListener("input",()=>cleanEmojiLive(el));
+});
+
+
+/* ================= COOLDOWN ================= */
+
+const btn = document.querySelector("button");
+
+function startCooldown(){
+    const end = Date.now() + COOLDOWN*1000;
+    localStorage.setItem("cooldown", end);
+    updateCooldown();
+}
+
+function updateCooldown(){
+
+    const end = localStorage.getItem("cooldown");
+
+    if(!end){
+        btn.disabled=false;
+        btn.innerText="Submit";
+        return;
+    }
+
+    const left = Math.ceil((end-Date.now())/1000);
+
+    if(left<=0){
+        localStorage.removeItem("cooldown");
+        btn.disabled=false;
+        btn.innerText="Submit";
+        return;
+    }
+
+    btn.disabled=true;
+    btn.innerText=`Wait ${left}s`;
+
+    setTimeout(updateCooldown,500);
+}
+
+
+/* ================= SUBMIT ================= */
+
+let lastMsg = "";
+
 function send(){
-    const name=document.getElementById("name").value.trim();
-    const msg=document.getElementById("msg").value.trim();
-    if(!name||!msg){alert("Fill both fields");return;}
 
-    const fd=new FormData();
-    fd.append("entry.114558379",name);
-    fd.append("entry.629672075",msg);
+    if(localStorage.getItem("cooldown")){
+        alert("Please wait ⏳");
+        return;
+    }
 
-    fetch(FORM_ACTION,{method:"POST",mode:"no-cors",body:fd});
-    alert("Sent anonymously 💌");
+    const name = document.getElementById("name").value.trim();
+    const msg  = document.getElementById("msg").value.trim();
+
+    if(!name || !msg){
+        alert("Fill both fields");
+        return;
+    }
+
+    if(emojiRegex.test(name+msg)){
+        alert("Emojis not allowed ❌");
+        return;
+    }
+
+    if(hasBadWord(name) || hasBadWord(msg)){
+        alert("Bad words not allowed ❌");
+        return;
+    }
+
+    if(tooShort(name) || tooShort(msg)){
+        alert("Too short ❌");
+        return;
+    }
+
+    if(onlyNumbers(name) || onlyNumbers(msg)){
+        alert("Numbers only not allowed ❌");
+        return;
+    }
+
+    if(msg === lastMsg){
+        alert("Duplicate message ❌");
+        return;
+    }
+
+    lastMsg = msg;
+
+    const fd = new FormData();
+    fd.append("entry.114558379", name);
+    fd.append("entry.629672075", msg);
+
+    fetch(FORM_ACTION,{
+        method:"POST",
+        mode:"no-cors",
+        body:fd
+    });
+
+    alert("Sent 💌");
 
     document.getElementById("name").value="";
     document.getElementById("msg").value="";
-    setTimeout(loadData,2000);
+
+    startCooldown();
+    setTimeout(loadData,1500);
 }
 
-/* DATA + PAGINATION */
+
+/* ================= TABLE ================= */
+
 let allRows=[];
 let page=0;
 const perPage=10;
 
 async function loadData(){
-    const res=await fetch(CSV_URL);
-    const text=await res.text();
-    const raw=text.split("\n").slice(1).filter(r=>r);
-    allRows=raw.reverse();
+
+    const res = await fetch(CSV_URL);
+    const text = await res.text();
+
+    const raw = text.split("\n").slice(1).filter(r=>r);
+
+    allRows = raw.reverse();
     render();
 }
 
 function render(){
-    const start=page*perPage;
-    const slice=allRows.slice(start,start+perPage);
+
+    const start = page*perPage;
+    const slice = allRows.slice(start,start+perPage);
 
     let html="";
     let num=allRows.length-start;
 
     slice.forEach((r,i)=>{
+
         const c=r.split(",");
-        if(!c[1]||!c[2])return;
+
+        if(!c[1]||!c[2]) return;
 
         html+=`
-        <tr class="${page===0&&i===0?"new":""}">
+        <tr class="${page===0&&i===0?'new':''}">
             <td>${num--}</td>
             <td>${c[1]} ${page===0&&i===0?'<span class="badge">NEW</span>':''}</td>
             <td>${c[2]}</td>
@@ -226,8 +369,13 @@ function render(){
 function nextPage(){ if((page+1)*perPage<allRows.length){page++;render();}}
 function prevPage(){ if(page>0){page--;render();}}
 
+
+/* ================= INIT ================= */
+
+startCooldown(); // cooldown on refresh
 loadData();
 setInterval(loadData,10000);
+
 </script>
 
 </body>
