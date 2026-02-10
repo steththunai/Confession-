@@ -1,11 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+
+/* ===========advertisement============ */
 
 <script src="https://quge5.com/88/tag.min.js" data-zone="209972" async data-cfasync="false"></script>
     
 
 <meta name="monetag" content="a35a4f928207fe433db55a28e9803644">
+
 
 <meta charset="UTF-8">
 <title>TKMC Crush Confession Board 💌</title>
@@ -19,24 +22,23 @@ body{
     color:white;
 }
 
-/* ===== HEADER ===== */
+/* HEADER */
 h1{
     text-align:center;
     margin:15px 0;
 }
 
-/* ===== LAYOUT ===== */
+/* LAYOUT */
 .wrapper{
     display:flex;
     gap:20px;
     padding:20px;
 }
-
 @media(max-width:800px){
     .wrapper{flex-direction:column;}
 }
 
-/* ===== FORM ===== */
+/* FORM */
 .formBox{
     flex:1;
     background:rgba(255,255,255,0.15);
@@ -44,7 +46,6 @@ h1{
     padding:20px;
     border-radius:16px;
 }
-
 input, textarea{
     width:100%;
     padding:10px;
@@ -53,11 +54,7 @@ input, textarea{
     border-radius:8px;
     font-size:14px;
 }
-
-textarea{
-    height:120px;
-}
-
+textarea{height:120px;}
 button{
     width:100%;
     padding:12px;
@@ -69,44 +66,67 @@ button{
     cursor:pointer;
 }
 
-/* ===== BOARD ===== */
+/* BOARD */
 .board{
     flex:2;
     background:rgba(255,255,255,0.12);
     backdrop-filter:blur(12px);
     padding:15px;
     border-radius:16px;
-    overflow:auto;
     max-height:80vh;
+    overflow:auto;
 }
 
 table{
     width:100%;
     border-collapse:collapse;
 }
-
 th{
     background:#ff4d6d;
     padding:10px;
-    text-align:left;
+    position:sticky;
+    top:0;
 }
-
 td{
     padding:8px;
     border-bottom:1px solid rgba(255,255,255,0.25);
 }
 
-tr:hover{
-    background:rgba(255,255,255,0.08);
+/* NEW MESSAGE */
+.new{
+    background:rgba(255,255,255,0.25);
+    animation:fadeIn 0.6s ease;
+}
+.badge{
+    background:#ffcc00;
+    color:black;
+    font-size:10px;
+    padding:2px 6px;
+    border-radius:6px;
+    margin-left:6px;
 }
 
-.time{
-    font-size:12px;
-    opacity:.8;
+.time{font-size:12px;opacity:.8;}
+
+@keyframes fadeIn{
+    from{opacity:0;transform:translateY(5px);}
+    to{opacity:1;transform:none;}
+}
+
+/* PAGINATION */
+.pagination{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-top:10px;
+}
+.pagination button{
+    width:auto;
+    padding:6px 12px;
+    font-size:14px;
 }
 </style>
 </head>
-
 
 <body>
 
@@ -114,176 +134,105 @@ tr:hover{
 
 <div class="wrapper">
 
-    <!-- ================= FORM ================= -->
-    <div class="formBox">
-        <h3>Send Message ❤️</h3>
+<!-- FORM -->
+<div class="formBox">
+<h3>Send Message ❤️</h3>
+<input id="name" placeholder="Crush name">
+<textarea id="msg" placeholder="Message to your crush"></textarea>
+<button onclick="send()">Submit</button>
+</div>
 
-        <input id="name" placeholder="Crush name">
-        <textarea id="msg" placeholder="Message to your crush"></textarea>
+<!-- BOARD -->
+<div class="board">
+<h3>❤️ Live Messages</h3>
 
-        <button onclick="send()">Submit</button>
-    </div>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Name</th>
+<th>Message</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody id="rows"></tbody>
+</table>
 
-
-    <!-- ================= TABLE ================= -->
-    <div class="board">
-        <h3>❤️ Live Messages</h3>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Name</th>
-                    <th>Message</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
-            <tbody id="rows"></tbody>
-        </table>
-    </div>
+<div class="pagination">
+<button onclick="prevPage()">⬅ Prev</button>
+<button onclick="nextPage()">Next ➡</button>
+</div>
+</div>
 
 </div>
 
-
 <script>
-
-/* ================= SETTINGS ================= */
-const COOLDOWN = 30; // seconds
-
+/* LINKS */
 const FORM_ACTION =
 "https://docs.google.com/forms/d/e/1FAIpQLSfelU_00WKalp-lEBfJgMz7KvGEdjh8CMoI3XhfCAbjD2thUw/formResponse";
 
 const CSV_URL =
 "https://docs.google.com/spreadsheets/d/e/2PACX-1vRp0XnZWfv7TKjF6eH5NNdtjGkn_U0qx9QfwT_9iUW_g9xmf02hg0opDrrJeZb3PJNdsTs7Ub2-6BcK/pub?output=csv";
 
-
-/* ================= BUTTON ================= */
-const btn = document.querySelector("button");
-
-
-/* ================= COOLDOWN TIMER ================= */
-
-function startTimer(seconds){
-
-    const end = Date.now() + seconds*1000;
-    localStorage.setItem("cooldownEnd", end);
-
-    updateTimer();
-}
-
-function updateTimer(){
-
-    const end = localStorage.getItem("cooldownEnd");
-
-    if(!end){
-        btn.disabled = false;
-        btn.innerText = "Submit";
-        return;
-    }
-
-    const left = Math.ceil((end - Date.now())/1000);
-
-    if(left <= 0){
-        localStorage.removeItem("cooldownEnd");
-        btn.disabled = false;
-        btn.innerText = "Submit";
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerText = `Wait ${left}s`;
-
-    setTimeout(updateTimer, 500);
-}
-
-
-/* ================= SUBMIT ================= */
-
+/* SUBMIT */
 function send(){
+    const name=document.getElementById("name").value.trim();
+    const msg=document.getElementById("msg").value.trim();
+    if(!name||!msg){alert("Fill both fields");return;}
 
-    // block if timer active
-    if(localStorage.getItem("cooldownEnd")){
-        alert("Please wait for timer ⏳");
-        return;
-    }
+    const fd=new FormData();
+    fd.append("entry.114558379",name);
+    fd.append("entry.629672075",msg);
 
-    const name = document.getElementById("name").value.trim();
-    const msg  = document.getElementById("msg").value.trim();
-
-    if(!name || !msg){
-        alert("Fill both fields");
-        return;
-    }
-
-    const fd = new FormData();
-    fd.append("entry.114558379", name);
-    fd.append("entry.629672075", msg);
-
-    fetch(FORM_ACTION,{
-        method:"POST",
-        mode:"no-cors",
-        body:fd
-    });
-
+    fetch(FORM_ACTION,{method:"POST",mode:"no-cors",body:fd});
     alert("Sent anonymously 💌");
 
     document.getElementById("name").value="";
     document.getElementById("msg").value="";
-
-    startTimer(COOLDOWN); // ⭐ start 15s cooldown
-    setTimeout(loadData,1500);
+    setTimeout(loadData,2000);
 }
 
-
-/* ================= LOAD TABLE (unchanged) ================= */
-
-let lastHTML="";
+/* DATA + PAGINATION */
+let allRows=[];
+let page=0;
+const perPage=10;
 
 async function loadData(){
-
-    try{
-        const res = await fetch(CSV_URL);
-        const text = await res.text();
-
-        const rows = text.split("\n").slice(1).reverse();
-
-        let html="";
-        let i=1;
-
-        rows.forEach(r=>{
-            if(!r) return;
-
-            const c=r.split(",");
-            const time=c[0], name=c[1], msg=c[2];
-
-            if(!name || !msg) return;
-
-            html += `
-            <tr>
-                <td>${i++}</td>
-                <td>${name}</td>
-                <td>${msg}</td>
-                <td class="time">${time}</td>
-            </tr>`;
-        });
-
-        if(html){
-            lastHTML=html;
-            document.getElementById("rows").innerHTML=html;
-        }
-
-    }catch{
-        document.getElementById("rows").innerHTML=lastHTML;
-    }
+    const res=await fetch(CSV_URL);
+    const text=await res.text();
+    const raw=text.split("\n").slice(1).filter(r=>r);
+    allRows=raw.reverse();
+    render();
 }
+
+function render(){
+    const start=page*perPage;
+    const slice=allRows.slice(start,start+perPage);
+
+    let html="";
+    let num=allRows.length-start;
+
+    slice.forEach((r,i)=>{
+        const c=r.split(",");
+        if(!c[1]||!c[2])return;
+
+        html+=`
+        <tr class="${page===0&&i===0?"new":""}">
+            <td>${num--}</td>
+            <td>${c[1]} ${page===0&&i===0?'<span class="badge">NEW</span>':''}</td>
+            <td>${c[2]}</td>
+            <td class="time">${c[0]}</td>
+        </tr>`;
+    });
+
+    document.getElementById("rows").innerHTML=html;
+}
+
+function nextPage(){ if((page+1)*perPage<allRows.length){page++;render();}}
+function prevPage(){ if(page>0){page--;render();}}
 
 loadData();
 setInterval(loadData,10000);
-
-
-/* ================= RUN ON PAGE LOAD ================= */
-startTimer(COOLDOWN); // ⭐ 15s timer every refresh
-
 </script>
 
 </body>
