@@ -141,7 +141,8 @@ tr:hover{
 
 <script>
 
-/* ================= LINKS ================= */
+/* ================= SETTINGS ================= */
+const COOLDOWN = 15; // seconds
 
 const FORM_ACTION =
 "https://docs.google.com/forms/d/e/1FAIpQLSfelU_00WKalp-lEBfJgMz7KvGEdjh8CMoI3XhfCAbjD2thUw/formResponse";
@@ -150,9 +151,55 @@ const CSV_URL =
 "https://docs.google.com/spreadsheets/d/e/2PACX-1vRp0XnZWfv7TKjF6eH5NNdtjGkn_U0qx9QfwT_9iUW_g9xmf02hg0opDrrJeZb3PJNdsTs7Ub2-6BcK/pub?output=csv";
 
 
+/* ================= BUTTON ================= */
+const btn = document.querySelector("button");
+
+
+/* ================= COOLDOWN TIMER ================= */
+
+function startTimer(seconds){
+
+    const end = Date.now() + seconds*1000;
+    localStorage.setItem("cooldownEnd", end);
+
+    updateTimer();
+}
+
+function updateTimer(){
+
+    const end = localStorage.getItem("cooldownEnd");
+
+    if(!end){
+        btn.disabled = false;
+        btn.innerText = "Submit";
+        return;
+    }
+
+    const left = Math.ceil((end - Date.now())/1000);
+
+    if(left <= 0){
+        localStorage.removeItem("cooldownEnd");
+        btn.disabled = false;
+        btn.innerText = "Submit";
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = `Wait ${left}s`;
+
+    setTimeout(updateTimer, 500);
+}
+
+
 /* ================= SUBMIT ================= */
 
 function send(){
+
+    // block if timer active
+    if(localStorage.getItem("cooldownEnd")){
+        alert("Please wait for timer ⏳");
+        return;
+    }
 
     const name = document.getElementById("name").value.trim();
     const msg  = document.getElementById("msg").value.trim();
@@ -163,8 +210,6 @@ function send(){
     }
 
     const fd = new FormData();
-
-    /* YOUR ENTRY IDS */
     fd.append("entry.114558379", name);
     fd.append("entry.629672075", msg);
 
@@ -179,22 +224,20 @@ function send(){
     document.getElementById("name").value="";
     document.getElementById("msg").value="";
 
-    setTimeout(loadData,2000);
+    startTimer(COOLDOWN); // ⭐ start 15s cooldown
+    setTimeout(loadData,1500);
 }
 
 
-/* ================= STABLE LOAD (NO GLITCH) ================= */
+/* ================= LOAD TABLE (unchanged) ================= */
 
-let lastHTML = ""; // cache to prevent blank flicker
+let lastHTML="";
 
 async function loadData(){
 
     try{
         const res = await fetch(CSV_URL);
-        if(!res.ok) return;
-
         const text = await res.text();
-        if(!text || text.length < 10) return;
 
         const rows = text.split("\n").slice(1).reverse();
 
@@ -204,34 +247,36 @@ async function loadData(){
         rows.forEach(r=>{
             if(!r) return;
 
-            const c = r.split(",");
+            const c=r.split(",");
             const time=c[0], name=c[1], msg=c[2];
 
-            if(!name || !msg || name==="undefined") return;
+            if(!name || !msg) return;
 
             html += `
             <tr>
                 <td>${i++}</td>
-                <td>❤️ ${name}</td>
+                <td>${name}</td>
                 <td>${msg}</td>
                 <td class="time">${time}</td>
             </tr>`;
         });
 
         if(html){
-            lastHTML = html;
-            document.getElementById("rows").innerHTML = html;
+            lastHTML=html;
+            document.getElementById("rows").innerHTML=html;
         }
 
-    }catch(e){
-        document.getElementById("rows").innerHTML = lastHTML;
+    }catch{
+        document.getElementById("rows").innerHTML=lastHTML;
     }
 }
 
-
-/* slower refresh = more stable */
 loadData();
 setInterval(loadData,10000);
+
+
+/* ================= RUN ON PAGE LOAD ================= */
+startTimer(COOLDOWN); // ⭐ 15s timer every refresh
 
 </script>
 
