@@ -163,6 +163,19 @@ td{
 
 <script>
 
+
+/* ===== BLOCK NUMBERS ===== */
+
+function blockNumbers(el){
+    el.addEventListener("input", function(){
+        this.value = this.value.replace(/[0-9]/g, "");
+    });
+}
+
+/* apply to both fields */
+blockNumbers(document.getElementById("name"));
+blockNumbers(document.getElementById("msg"));
+
 /* ================= SETTINGS ================= */
 
 const COOLDOWN = 0; // seconds
