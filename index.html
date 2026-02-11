@@ -269,6 +269,10 @@ function updateCooldown(){
     setTimeout(updateCooldown,500);
 }
 
+if(/[0-9]/.test(name) || /[0-9]/.test(msg)){
+    alert("Numbers are not allowed ❌");
+    return;
+}
 
 /* ================= SUBMIT ================= */
 
