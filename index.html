@@ -163,22 +163,9 @@ td{
 
 <script>
 
-
-/* ===== BLOCK NUMBERS ===== */
-
-function blockNumbers(el){
-    el.addEventListener("input", function(){
-        this.value = this.value.replace(/[0-9]/g, "");
-    });
-}
-
-/* apply to both fields */
-blockNumbers(document.getElementById("name"));
-blockNumbers(document.getElementById("msg"));
-
 /* ================= SETTINGS ================= */
 
-const COOLDOWN = 0; // seconds
+const COOLDOWN = 0;
 
 const FORM_ACTION =
 "https://docs.google.com/forms/d/e/1FAIpQLSfelU_00WKalp-lEBfJgMz7KvGEdjh8CMoI3XhfCAbjD2thUw/formResponse";
@@ -187,129 +174,62 @@ const CSV_URL =
 "https://docs.google.com/spreadsheets/d/e/2PACX-1vRp0XnZWfv7TKjF6eH5NNdtjGkn_U0qx9QfwT_9iUW_g9xmf02hg0opDrrJeZb3PJNdsTs7Ub2-6BcK/pub?output=csv";
 
 
-/* ================= BLOCK RULES ================= */
+/* ================= INPUT REFERENCES ================= */
 
-/* 🚫 ALL emojis */
-const emojiRegex = /\p{Extended_Pictographic}/gu;
-
-/* 🚫 bad words (add more anytime) */
-const badWords = [
-"fuck","shit","bitch","asshole","porn","punda","sex","sunni" , "oombu"
-,"தேவடியா","புண்ட","ஓம்பு","சூது", "entry"
-];
+const nameInput = document.getElementById("name");
+const msgInput  = document.getElementById("msg");
+const btn = document.querySelector(".formBox button");
 
 
-/* ================= HELPERS ================= */
+/* ================= BLOCK NUMBERS ================= */
 
-function hasBadWord(t){
-    t = t.toLowerCase();
-    return badWords.some(w => t.includes(w));
-}
-
-function onlyNumbers(t){
-    return /^[0-9]+$/.test(t);
-}
-
-function tooShort(t){
-    return t.length < 3;
-}
-
-function cleanEmojiLive(el){
-    el.value = el.value.replace(emojiRegex,"");
-}
-
-
-/* ================= BLOCK PASTE ================= */
-
-document.addEventListener("paste",e=>e.preventDefault());
-document.addEventListener("copy",e=>e.preventDefault());
-document.addEventListener("cut",e=>e.preventDefault());
-document.addEventListener("contextmenu",e=>e.preventDefault());
-
-
-/* ================= AUTO REMOVE EMOJI WHILE TYPING ================= */
-
-document.querySelectorAll("input,textarea").forEach(el=>{
-    el.addEventListener("input",()=>cleanEmojiLive(el));
+[nameInput, msgInput].forEach(el=>{
+    el.addEventListener("input", ()=>{
+        el.value = el.value.replace(/[0-9]/g,"");
+    });
 });
 
 
-/* ================= COOLDOWN ================= */
+/* ================= BLOCK EMOJI ================= */
 
-const btn = document.querySelector("button");
+const emojiRegex = /\p{Extended_Pictographic}/gu;
 
-function startCooldown(){
-    const end = Date.now() + COOLDOWN*1000;
-    localStorage.setItem("cooldown", end);
-    updateCooldown();
+[nameInput, msgInput].forEach(el=>{
+    el.addEventListener("input", ()=>{
+        el.value = el.value.replace(emojiRegex,"");
+    });
+});
+
+
+/* ================= BAD WORDS ================= */
+
+const badWords = [
+"fuck","shit","bitch","asshole","porn","sex",
+"தேவடியா","புண்ட","ஓம்பு","சூது"
+];
+
+function hasBadWord(t){
+    t=t.toLowerCase();
+    return badWords.some(w=>t.includes(w));
 }
 
-function updateCooldown(){
-
-    const end = localStorage.getItem("cooldown");
-
-    if(!end){
-        btn.disabled=false;
-        btn.innerText="Submit";
-        return;
-    }
-
-    const left = Math.ceil((end-Date.now())/1000);
-
-    if(left<=0){
-        localStorage.removeItem("cooldown");
-        btn.disabled=false;
-        btn.innerText="Submit";
-        return;
-    }
-
-    btn.disabled=true;
-    btn.innerText=`Wait ${left}s`;
-
-    setTimeout(updateCooldown,500);
-}
-
-if(/[0-9]/.test(name) || /[0-9]/.test(msg)){
-    alert("Numbers are not allowed ❌");
-    return;
-}
 
 /* ================= SUBMIT ================= */
 
-let lastMsg = "";
+let lastMsg="";
 
 function send(){
 
-    if(localStorage.getItem("cooldown")){
-        alert("Please wait ⏳");
-        return;
-    }
-
-    const name = document.getElementById("name").value.trim();
-    const msg  = document.getElementById("msg").value.trim();
+    const name = nameInput.value.trim();
+    const msg  = msgInput.value.trim();
 
     if(!name || !msg){
         alert("Fill both fields");
         return;
     }
 
-    if(emojiRegex.test(name+msg)){
-        alert("Emojis not allowed ❌");
-        return;
-    }
-
     if(hasBadWord(name) || hasBadWord(msg)){
         alert("Bad words not allowed ❌");
-        return;
-    }
-
-    if(tooShort(name) || tooShort(msg)){
-        alert("Too short ❌");
-        return;
-    }
-
-    if(onlyNumbers(name) || onlyNumbers(msg)){
-        alert("Numbers only not allowed ❌");
         return;
     }
 
@@ -332,10 +252,9 @@ function send(){
 
     alert("Sent 💌");
 
-    document.getElementById("name").value="";
-    document.getElementById("msg").value="";
+    nameInput.value="";
+    msgInput.value="";
 
-    startCooldown();
     setTimeout(loadData,1500);
 }
 
@@ -351,7 +270,7 @@ async function loadData(){
     const res = await fetch(CSV_URL);
     const text = await res.text();
 
-    const raw = text.split("\n").slice(1).filter(r=>r);
+    const raw=text.split("\n").slice(1).filter(r=>r);
 
     allRows = raw.reverse();
     render();
@@ -359,22 +278,22 @@ async function loadData(){
 
 function render(){
 
-    const start = page*perPage;
-    const slice = allRows.slice(start,start+perPage);
+    const start=page*perPage;
+    const slice=allRows.slice(start,start+perPage);
 
     let html="";
     let num=allRows.length-start;
 
-    slice.forEach((r,i)=>{
+    slice.forEach(r=>{
 
         const c=r.split(",");
 
         if(!c[1]||!c[2]) return;
 
         html+=`
-        <tr class="${page===0&&i===0?'new':''}">
+        <tr>
             <td>${num--}</td>
-            <td>${c[1]} ${page===0&&i===0?'<span class="badge">NEW</span>':''}</td>
+            <td>${c[1]}</td>
             <td>${c[2]}</td>
             <td class="time">${c[0]}</td>
         </tr>`;
@@ -389,7 +308,6 @@ function prevPage(){ if(page>0){page--;render();}}
 
 /* ================= INIT ================= */
 
-startCooldown(); // cooldown on refresh
 loadData();
 setInterval(loadData,10000);
 
